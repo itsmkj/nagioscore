@@ -3471,6 +3471,22 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 	double average_percent_time_unreachable_known = 0.0;
 	double average_percent_time_indeterminate = 0.0;
 
+	double average_percent_time_down_scheduled=0.0;
+	double average_percent_time_down_unscheduled=0.0;	
+	double average_percent_time_up_with_scheduled=0.0;
+	double average_percent_time_up_with_scheduled_known=0.0;
+	double percent_time_down_scheduled=0.0;
+	double percent_time_down_unscheduled=0.0;
+	double percent_time_down_scheduled_known=0.0;
+	double percent_time_down_unscheduled_known=0.0;
+	double percent_time_up_with_scheduled=0.0;
+	double percent_time_up_with_scheduled_known=0.0;
+
+	int days, hours, minutes, seconds;
+	char time_down_scheduled_string[48];
+	char time_down_unscheduled_string[48];        
+	char time_down_string[48];
+
 	int current_subject = 0;
 
 	char *bgclass = "";
@@ -3492,7 +3508,7 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 
 	printf("<DIV ALIGN=CENTER>\n");
 	printf("<TABLE BORDER=0 CLASS='data'>\n");
-	printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>%% Time Up</TH><TH CLASS='data'>%% Time Down</TH><TH CLASS='data'>%% Time Unreachable</TH><TH CLASS='data'>%% Time Undetermined</TH></TR>\n");
+	printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>%% Time Up</TH><TH CLASS='data'>%% Time Up With Scheduled</TH><TH CLASS='data'>%% Time Down</TH><TH CLASS='data'>%% Time Unreachable</TH><TH CLASS='data'>%% Time Undetermined</TH><TH CLASS='data'>%% Time Down Scheduled</TH><TH CLASS='data'>%% Time Down Unscheduled</TH></TR>\n");
 
 	for(temp_subject = subject_list; temp_subject != NULL; temp_subject = temp_subject->next) {
 
@@ -3517,6 +3533,13 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 		percent_time_down_known = 0.0;
 		percent_time_unreachable_known = 0.0;
 
+		percent_time_down_scheduled=0.0;
+		percent_time_down_unscheduled=0.0;
+		percent_time_down_scheduled_known=0.0;
+		percent_time_down_unscheduled_known=0.0;
+		percent_time_up_with_scheduled=0.0;
+		percent_time_up_with_scheduled_known=0.0;
+
 		time_determinate = temp_subject->time_up + temp_subject->time_down + temp_subject->time_unreachable;
 		time_indeterminate = total_time - time_determinate;
 
@@ -3525,10 +3548,17 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 			percent_time_down = (double)(((double)temp_subject->time_down * 100.0) / (double)total_time);
 			percent_time_unreachable = (double)(((double)temp_subject->time_unreachable * 100.0) / (double)total_time);
 			percent_time_indeterminate = (double)(((double)time_indeterminate * 100.0) / (double)total_time);
+			percent_time_down_scheduled=(double)(((double)temp_subject->scheduled_time_down*100.0)/(double)total_time);
+			percent_time_down_unscheduled=percent_time_down-percent_time_down_scheduled;
+            percent_time_up_with_scheduled=percent_time_up+percent_time_down_scheduled;
 			if(time_determinate > 0) {
 				percent_time_up_known = (double)(((double)temp_subject->time_up * 100.0) / (double)time_determinate);
 				percent_time_down_known = (double)(((double)temp_subject->time_down * 100.0) / (double)time_determinate);
 				percent_time_unreachable_known = (double)(((double)temp_subject->time_unreachable * 100.0) / (double)time_determinate);
+				percent_time_down_scheduled_known=(double)(((double)temp_subject->scheduled_time_down*100.0)/(double)time_determinate);
+				percent_time_down_unscheduled_known=percent_time_down_known-percent_time_down_scheduled_known;
+                                
+                percent_time_up_with_scheduled_known=percent_time_up_known+percent_time_down_scheduled_known;  
 				}
 			}
 
@@ -3543,7 +3573,7 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 
 		printf("<tr CLASS='data%s'><td CLASS='data%s'>", bgclass, bgclass);
 		host_report_url(temp_subject->host_name, temp_subject->host_name);
-		printf("</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", percent_time_up, percent_time_up_known, percent_time_down, percent_time_down_known, percent_time_unreachable, percent_time_unreachable_known, bgclass, percent_time_indeterminate);
+		printf("</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td><td  CLASS='hostDOWN'>%2.3f%%</td><td  CLASS='hostDOWN'>%2.3f%%</td></tr>\n",percent_time_up,percent_time_up_known, percent_time_up_with_scheduled, percent_time_up_with_scheduled_known,percent_time_down,percent_time_down_known,percent_time_unreachable,percent_time_unreachable_known,bgclass,percent_time_indeterminate,percent_time_down_scheduled_known,percent_time_down_unscheduled_known);
 
 		get_running_average(&average_percent_time_up, percent_time_up, current_subject);
 		get_running_average(&average_percent_time_up_known, percent_time_up_known, current_subject);
@@ -3552,6 +3582,10 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 		get_running_average(&average_percent_time_unreachable, percent_time_unreachable, current_subject);
 		get_running_average(&average_percent_time_unreachable_known, percent_time_unreachable_known, current_subject);
 		get_running_average(&average_percent_time_indeterminate, percent_time_indeterminate, current_subject);
+		get_running_average(&average_percent_time_down_scheduled,percent_time_down_scheduled,current_subject);
+        get_running_average(&average_percent_time_down_unscheduled,percent_time_down_unscheduled,current_subject);
+        get_running_average(&average_percent_time_up_with_scheduled,percent_time_up_with_scheduled,current_subject);
+        get_running_average(&average_percent_time_up_with_scheduled_known,percent_time_up_with_scheduled_known,current_subject);
 		}
 
 	/* average statistics */
@@ -3563,7 +3597,7 @@ void display_specific_hostgroup_availability(hostgroup *hg) {
 		odd = 1;
 		bgclass = "Even";
 		}
-	printf("<tr CLASS='data%s'><td CLASS='data%s'>Average</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>", bgclass, bgclass, average_percent_time_up, average_percent_time_up_known, average_percent_time_down, average_percent_time_down_known, average_percent_time_unreachable, average_percent_time_unreachable_known, bgclass, average_percent_time_indeterminate);
+	printf("<tr CLASS='data%s'><td CLASS='data%s'>Average</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td><td CLASS='hostDOWN'>%2.5f%%</td><td CLASS='hostDOWN'>%2.5f%%</td></tr>",bgclass,bgclass,average_percent_time_up,average_percent_time_up_known, average_percent_time_up_with_scheduled, average_percent_time_up_with_scheduled_known,average_percent_time_down,average_percent_time_down_known,average_percent_time_unreachable,average_percent_time_unreachable_known,bgclass,average_percent_time_indeterminate, average_percent_time_down_scheduled, average_percent_time_down_unscheduled);
 
 	printf("</table>\n");
 	printf("</DIV>\n");
@@ -3630,6 +3664,21 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 	double average_percent_time_critical = 0.0;
 	double average_percent_time_critical_known = 0.0;
 	double average_percent_time_indeterminate = 0.0;
+	double average_percent_time_down_scheduled=0.0;
+	double average_percent_time_down_unscheduled=0.0;
+	double average_percent_time_up_with_scheduled=0.0;
+	double average_percent_time_up_with_scheduled_known=0.0;
+	double percent_time_down_scheduled=0.0;
+	double percent_time_down_unscheduled=0.0;
+	double percent_time_down_scheduled_known=0.0;
+	double percent_time_down_unscheduled_known=0.0;
+	double percent_time_up_with_scheduled=0.0;
+	double percent_time_up_with_scheduled_known=0.0;
+
+	int days, hours, minutes, seconds;
+	char time_down_scheduled_string[48];
+	char time_down_unscheduled_string[48];        
+	char time_down_string[48];
 
 	int current_subject = 0;
 
@@ -3654,7 +3703,9 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 
 	printf("<DIV ALIGN=CENTER>\n");
 	printf("<TABLE BORDER=0 CLASS='data'>\n");
-	printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>%% Time Up</TH><TH CLASS='data'>%% Time Down</TH><TH CLASS='data'>%% Time Unreachable</TH><TH CLASS='data'>%% Time Undetermined</TH></TR>\n");
+	/* printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>%% Time Up</TH><TH CLASS='data'>%% Time Down</TH><TH CLASS='data'>%% Time Unreachable</TH><TH CLASS='data'>%% Time Undetermined</TH></TR>\n"); */
+	printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>%% Time Up</TH><TH CLASS='data'>%% Time Up With Scheduled</TH><TH CLASS='data'>%% Time Down</TH><TH CLASS='data'>%% Time Unreachable</TH><TH CLASS='data'>%% Time Undetermined</TH><TH CLASS='data'>%% Time Down Scheduled</TH><TH CLASS='data'>%% Time Down Unscheduled</TH></TR>\n");
+
 
 	for(temp_subject = subject_list; temp_subject != NULL; temp_subject = temp_subject->next) {
 
@@ -3679,6 +3730,13 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 		percent_time_down_known = 0.0;
 		percent_time_unreachable_known = 0.0;
 
+		percent_time_down_scheduled=0.0;
+        percent_time_down_unscheduled=0.0;
+        percent_time_down_scheduled_known=0.0;
+        percent_time_down_unscheduled_known=0.0;
+        percent_time_up_with_scheduled=0.0;
+        percent_time_up_with_scheduled_known=0.0;
+
 		time_determinate = temp_subject->time_up + temp_subject->time_down + temp_subject->time_unreachable;
 		time_indeterminate = total_time - time_determinate;
 
@@ -3687,10 +3745,17 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 			percent_time_down = (double)(((double)temp_subject->time_down * 100.0) / (double)total_time);
 			percent_time_unreachable = (double)(((double)temp_subject->time_unreachable * 100.0) / (double)total_time);
 			percent_time_indeterminate = (double)(((double)time_indeterminate * 100.0) / (double)total_time);
+			percent_time_down_scheduled=(double)(((double)temp_subject->scheduled_time_down*100.0)/(double)total_time);
+			percent_time_down_unscheduled=percent_time_down-percent_time_down_scheduled;
+            percent_time_up_with_scheduled=percent_time_up+percent_time_down_scheduled;
 			if(time_determinate > 0) {
 				percent_time_up_known = (double)(((double)temp_subject->time_up * 100.0) / (double)time_determinate);
 				percent_time_down_known = (double)(((double)temp_subject->time_down * 100.0) / (double)time_determinate);
 				percent_time_unreachable_known = (double)(((double)temp_subject->time_unreachable * 100.0) / (double)time_determinate);
+				percent_time_down_scheduled_known=(double)(((double)temp_subject->scheduled_time_down*100.0)/(double)time_determinate);
+				percent_time_down_unscheduled_known=percent_time_down_known-percent_time_down_scheduled_known;
+                                
+                percent_time_up_with_scheduled_known=percent_time_up_known+percent_time_down_scheduled_known; 
 				}
 			}
 
@@ -3705,7 +3770,8 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 
 		printf("<tr CLASS='data%s'><td CLASS='data%s'>", bgclass, bgclass);
 		host_report_url(temp_subject->host_name, temp_subject->host_name);
-		printf("</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", percent_time_up, percent_time_up_known, percent_time_down, percent_time_down_known, percent_time_unreachable, percent_time_unreachable_known, bgclass, percent_time_indeterminate);
+		/* printf("</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", percent_time_up, percent_time_up_known, percent_time_down, percent_time_down_known, percent_time_unreachable, percent_time_unreachable_known, bgclass, percent_time_indeterminate); */
+		printf("</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUPSCHED'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td><td  CLASS='hostDOWNSCHED'>%2.3f%%</td><td  CLASS='hostDOWNUNSCHED'>%2.3f%%</td></tr>\n",percent_time_up,percent_time_up_known, percent_time_up_with_scheduled, percent_time_up_with_scheduled_known,percent_time_down,percent_time_down_known,percent_time_unreachable,percent_time_unreachable_known,bgclass,percent_time_indeterminate,percent_time_down_scheduled_known,percent_time_down_unscheduled_known);
 
 		get_running_average(&average_percent_time_up, percent_time_up, current_subject);
 		get_running_average(&average_percent_time_up_known, percent_time_up_known, current_subject);
@@ -3714,6 +3780,10 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 		get_running_average(&average_percent_time_unreachable, percent_time_unreachable, current_subject);
 		get_running_average(&average_percent_time_unreachable_known, percent_time_unreachable_known, current_subject);
 		get_running_average(&average_percent_time_indeterminate, percent_time_indeterminate, current_subject);
+		get_running_average(&average_percent_time_down_scheduled,percent_time_down_scheduled,current_subject);
+        get_running_average(&average_percent_time_down_unscheduled,percent_time_down_unscheduled,current_subject);
+        get_running_average(&average_percent_time_up_with_scheduled,percent_time_up_with_scheduled,current_subject);
+        get_running_average(&average_percent_time_up_with_scheduled_known,percent_time_up_with_scheduled_known,current_subject);
 		}
 
 	/* average statistics */
@@ -3725,7 +3795,8 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 		odd = 1;
 		bgclass = "Even";
 		}
-	printf("<tr CLASS='data%s'><td CLASS='data%s'>Average</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>", bgclass, bgclass, average_percent_time_up, average_percent_time_up_known, average_percent_time_down, average_percent_time_down_known, average_percent_time_unreachable, average_percent_time_unreachable_known, bgclass, average_percent_time_indeterminate);
+	/* printf("<tr CLASS='data%s'><td CLASS='data%s'>Average</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>", bgclass, bgclass, average_percent_time_up, average_percent_time_up_known, average_percent_time_down, average_percent_time_down_known, average_percent_time_unreachable, average_percent_time_unreachable_known, bgclass, average_percent_time_indeterminate); */
+	printf("<tr CLASS='data%s'><td CLASS='data%s'>Average</td><td CLASS='hostUP'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUPSCHED'>%2.3f%% (%2.3f%%)</td><td CLASS='hostDOWN'>%2.3f%% (%2.3f%%)</td><td CLASS='hostUNREACHABLE'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td><td CLASS='hostDOWNSCHED'>%2.5f%%</td><td CLASS='hostDOWNUNSCHED'>%2.5f%%</td></tr>",bgclass,bgclass,average_percent_time_up,average_percent_time_up_known, average_percent_time_up_with_scheduled, average_percent_time_up_with_scheduled_known,average_percent_time_down,average_percent_time_down_known,average_percent_time_unreachable,average_percent_time_unreachable_known,bgclass,average_percent_time_indeterminate, average_percent_time_down_scheduled, average_percent_time_down_unscheduled);
 
 	printf("</table>\n");
 	printf("</DIV>\n");
@@ -3735,7 +3806,9 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 
 	printf("<DIV ALIGN=CENTER>\n");
 	printf("<TABLE BORDER=0 CLASS='data'>\n");
-	printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>Service</TH><TH CLASS='data'>%% Time OK</TH><TH CLASS='data'>%% Time Warning</TH><TH CLASS='data'>%% Time Unknown</TH><TH CLASS='data'>%% Time Critical</TH><TH CLASS='data'>%% Time Undetermined</TH></TR>\n");
+	/* printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>Service</TH><TH CLASS='data'>%% Time OK</TH><TH CLASS='data'>%% Time Warning</TH><TH CLASS='data'>%% Time Unknown</TH><TH CLASS='data'>%% Time Critical</TH><TH CLASS='data'>%% Time Undetermined</TH></TR>\n"); */
+	printf("<TR><TH CLASS='data'>Host</TH><TH CLASS='data'>Service</TH><TH CLASS='data'>%% Time Up</TH><TH CLASS='data'>%% Time Up With Scheduled</TH><TH CLASS='data'>%% Time Warning</TH><TH CLASS='data'>%% Time Unknown</TH><TH CLASS='data'>%% Time Critical</TH><TH CLASS='data'>%% Time Undetermined</TH><TH CLASS='data'>%% Time Down Scheduled</TH><TH CLASS='data'>%% Time Down Unscheduled</TH></TR>\n");
+
 
 	current_subject = 0;
 	average_percent_time_indeterminate = 0.0;
@@ -3771,17 +3844,32 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 		percent_time_unknown_known = 0.0;
 		percent_time_critical_known = 0.0;
 
+		percent_time_down_scheduled=0.0;
+        percent_time_down_unscheduled=0.0;
+        percent_time_down_scheduled_known=0.0;
+        percent_time_down_unscheduled_known=0.0;
+        percent_time_up_with_scheduled=0.0;
+        percent_time_up_with_scheduled_known=0.0;
+
 		if(total_time > 0) {
 			percent_time_ok = (double)(((double)temp_subject->time_ok * 100.0) / (double)total_time);
 			percent_time_warning = (double)(((double)temp_subject->time_warning * 100.0) / (double)total_time);
 			percent_time_unknown = (double)(((double)temp_subject->time_unknown * 100.0) / (double)total_time);
 			percent_time_critical = (double)(((double)temp_subject->time_critical * 100.0) / (double)total_time);
 			percent_time_indeterminate = (double)(((double)time_indeterminate * 100.0) / (double)total_time);
+			percent_time_down_scheduled=(double)(((double)temp_subject->scheduled_time_critical*100.0)/(double)total_time);
+			percent_time_down_unscheduled=percent_time_critical-percent_time_down_scheduled;
+            percent_time_up_with_scheduled=percent_time_ok+percent_time_down_scheduled;
+
 			if(time_determinate > 0) {
 				percent_time_ok_known = (double)(((double)temp_subject->time_ok * 100.0) / (double)time_determinate);
 				percent_time_warning_known = (double)(((double)temp_subject->time_warning * 100.0) / (double)time_determinate);
 				percent_time_unknown_known = (double)(((double)temp_subject->time_unknown * 100.0) / (double)time_determinate);
 				percent_time_critical_known = (double)(((double)temp_subject->time_critical * 100.0) / (double)time_determinate);
+				percent_time_down_scheduled_known=(double)(((double)temp_subject->scheduled_time_critical*100.0)/(double)time_determinate);
+				percent_time_down_unscheduled_known=percent_time_critical_known-percent_time_down_scheduled_known;
+                                
+                percent_time_up_with_scheduled_known=percent_time_ok_known+percent_time_down_scheduled_known;
 				}
 			}
 
@@ -3799,7 +3887,8 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 			host_report_url(temp_subject->host_name, temp_subject->host_name);
 		printf("</td><td CLASS='data%s'>", bgclass);
 		service_report_url(temp_subject->host_name, temp_subject->service_description, temp_subject->service_description);
-		printf("</td><td CLASS='serviceOK'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUNKNOWN'>%2.3f%% (%2.3f%%)</td><td class='serviceCRITICAL'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", percent_time_ok, percent_time_ok_known, percent_time_warning, percent_time_warning_known, percent_time_unknown, percent_time_unknown_known, percent_time_critical, percent_time_critical_known, bgclass, percent_time_indeterminate);
+		/*printf("</td><td CLASS='serviceOK'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUNKNOWN'>%2.3f%% (%2.3f%%)</td><td class='serviceCRITICAL'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", percent_time_ok, percent_time_ok_known, percent_time_warning, percent_time_warning_known, percent_time_unknown, percent_time_unknown_known, percent_time_critical, percent_time_critical_known, bgclass, percent_time_indeterminate); */
+		printf("</td><td CLASS='serviceOK'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUPSCHED'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUNKNOWN'>%2.3f%% (%2.3f%%)</td><td class='serviceCRITICAL'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td><td  CLASS='serviceDOWNSCHED'>%2.3f%%</td><td  CLASS='serviceDOWNUNSCHED'>%2.3f%%</td></tr>\n", percent_time_ok, percent_time_ok_known, percent_time_up_with_scheduled, percent_time_up_with_scheduled_known, percent_time_warning, percent_time_warning_known, percent_time_unknown, percent_time_unknown_known, percent_time_critical, percent_time_critical_known, bgclass, percent_time_indeterminate, percent_time_down_scheduled_known,percent_time_down_unscheduled_known);
 
 		strncpy(last_host, temp_subject->host_name, sizeof(last_host) - 1);
 		last_host[sizeof(last_host) - 1] = '\x0';
@@ -3813,6 +3902,10 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 		get_running_average(&average_percent_time_critical, percent_time_critical, current_subject);
 		get_running_average(&average_percent_time_critical_known, percent_time_critical_known, current_subject);
 		get_running_average(&average_percent_time_indeterminate, percent_time_indeterminate, current_subject);
+		get_running_average(&average_percent_time_down_scheduled,percent_time_down_scheduled,current_subject);
+        get_running_average(&average_percent_time_down_unscheduled,percent_time_down_unscheduled,current_subject);
+        get_running_average(&average_percent_time_up_with_scheduled,percent_time_up_with_scheduled,current_subject);
+        get_running_average(&average_percent_time_up_with_scheduled_known,percent_time_up_with_scheduled_known,current_subject);
 		}
 
 	/* display average stats */
@@ -3825,7 +3918,11 @@ void display_specific_servicegroup_availability(servicegroup *sg) {
 		bgclass = "Even";
 		}
 
-	printf("<tr CLASS='data%s'><td CLASS='data%s' colspan='2'>Average</td><td CLASS='serviceOK'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUNKNOWN'>%2.3f%% (%2.3f%%)</td><td class='serviceCRITICAL'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", bgclass, bgclass, average_percent_time_ok, average_percent_time_ok_known, average_percent_time_warning, average_percent_time_warning_known, average_percent_time_unknown, average_percent_time_unknown_known, average_percent_time_critical, average_percent_time_critical_known, bgclass, average_percent_time_indeterminate);
+	/* printf("<tr CLASS='data%s'><td CLASS='data%s' colspan='2'>Average</td><td CLASS='serviceOK'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUNKNOWN'>%2.3f%% (%2.3f%%)</td><td class='serviceCRITICAL'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td></tr>\n", bgclass, bgclass, average_percent_time_ok, average_percent_time_ok_known, average_percent_time_warning, average_percent_time_warning_known, average_percent_time_unknown, average_percent_time_unknown_known, average_percent_time_critical, average_percent_time_critical_known, bgclass, average_percent_time_indeterminate); */
+
+	printf("<tr CLASS='data%s'><td CLASS='data%s' colspan='2'>Average</td><td CLASS='serviceOK'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUPSCHED'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceWARNING'>%2.3f%% (%2.3f%%)</td><td CLASS='serviceUNKNOWN'>%2.3f%% (%2.3f%%)</td><td class='serviceCRITICAL'>%2.3f%% (%2.3f%%)</td><td class='data%s'>%2.3f%%</td><td CLASS='serviceDOWNSCHED'>%2.5f%%</td><td CLASS='serviceDOWNUNSCHED'>%2.5f%%</td></tr>\n", bgclass, bgclass, average_percent_time_ok, average_percent_time_ok_known, average_percent_time_up_with_scheduled, average_percent_time_up_with_scheduled_known, average_percent_time_warning, average_percent_time_warning_known, average_percent_time_unknown, average_percent_time_unknown_known, average_percent_time_critical, average_percent_time_critical_known, bgclass, average_percent_time_indeterminate, average_percent_time_down_scheduled, average_percent_time_down_unscheduled);
+
+
 
 	printf("</table>\n");
 	printf("</DIV>\n");
