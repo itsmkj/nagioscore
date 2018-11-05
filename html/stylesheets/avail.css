@@ -19,11 +19,18 @@ TABLE.data {  font-size: 10pt;  background-color: white;  padding: 2px;border-co
 .hostUP {   text-align: left;  background-color: #33FF00;  font-weight: bold; }
 .hostDOWN {   text-align: left;  background-color: #F83838;  font-weight: bold; }
 .hostUNREACHABLE {    text-align: left;  background-color: #F83838;  font-weight: bold; }
+.hostWARNING {   text-align: left;  background-color: #FEFFC1;  font-weight: bold; }
+.hostUPSCHED {   text-align: left;  background-color: #C0E00A;  font-weight: bold; }
+.hostDOWNSCHED {    text-align: left;  background-color: #FFEDDD;  font-weight: bold; }
+.hostDOWNUNSCHED {    text-align: left;  background-color: #FFDDAA;  font-weight: bold; }
 
 .serviceOK {    text-align: left;  background-color: #33FF00;  font-weight: bold; }
 .serviceWARNING {   text-align: left;  background-color: #FFFF00;  font-weight: bold; }
 .serviceUNKNOWN {    text-align: left;  background-color: #FF9900;  font-weight: bold; }
 .serviceCRITICAL {  text-align: left;  background-color: #F83838;  font-weight: bold; }
+.serviceUPSCHED {    text-align: left;  background-color: #C0E00A;  font-weight: bold; }
+.serviceDOWNSCHED {   text-align: left;  background-color: #FFEDDD;  font-weight: bold; }
+.serviceDOWNUNSCHED {    text-align: left;  background-color: #FFDDAA;  font-weight: bold; }
 
 .optBox { font-size: 10pt;  font-weight: bold; }
 .optBoxItem {   font-weight: bold;  color: red; }
